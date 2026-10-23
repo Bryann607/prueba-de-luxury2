@@ -1,0 +1,27 @@
+name: Deploy web a GitHub Pages
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter create . --platforms=web --project-name=luxury_app
+      - run: flutter pub get
+      - run: >
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+          --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: build/web }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: { pages: write, id-token: write }
+    environment: { name: github-pages, url: "${{ steps.d.outputs.page_url }}" }
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
